@@ -32,7 +32,7 @@ fn handle_connection(mut stream: TcpStream) {
 
     println!("Request: {}", request);
 
-    let html_contents = fs::read_to_string("index.html").unwrap();
+    //let html_contents = fs::read_to_string("index.html").unwrap();
 
     let response = response_html(&request.to_string());
 
@@ -41,11 +41,31 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn response_html(request: &String) -> String {
-    let html_contents = fs::read_to_string("index.html").unwrap();
+    let mut html_contents = fs::read_to_string("start.html").unwrap();
+
+    let html_header_as_list = add_html_header_as_string(request);
+
+    html_contents += &html_header_as_list;
+
+    html_contents += &fs::read_to_string("end.html").unwrap();
     
     format!(
         "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
         html_contents.len(),
         html_contents
     )
+}
+
+fn add_html_header_as_string(header: &String) -> String {
+    let mut header_as_list: String = "<ul>".to_string();
+
+    for header_line in header.lines() {
+        header_as_list += "<li>";
+        header_as_list += header_line;
+        header_as_list += "</li>";
+    }
+
+    header_as_list += "</ul>";
+
+   return header_as_list;
 }
