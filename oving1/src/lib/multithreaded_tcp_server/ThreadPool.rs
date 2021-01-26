@@ -3,6 +3,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
+//Based off of the rust book's implementation of a thread pool
+
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
@@ -25,17 +27,17 @@ impl ThreadPool {
         ThreadPool { workers, sender }
     }
 
-    pub fn excecute<F>(&self, f: F)
+    pub fn excecute<F>(&self, work: F)
     where
         F: FnOnce() + Send + 'static,
     {
-        let job = Box::new(f);
+        let job = Box::new(work);
 
         self.sender.send(Message::NewJob(job)).unwrap();
     }
 }
 
-type Job = Box<dyn FnOnce() + Send + 'static>;
+type Job = Box<dyn FnOnce() + Send + 'static>; // boxing elements lets you refer to something that will be put on a stack. This will be the function that is sent to the worker(thread) for excecution.
 
 struct Worker {
     id: usize,
@@ -56,7 +58,7 @@ impl Worker {
                 Message::NewJob(job) => {
                     println!("Worker {} got a job; executing", id);
 
-                    job();
+                    job(); // excecuting boxed function
                 }
                 Message::Terminate => {
                     println!("Worker {} was told to terminate.", id);
