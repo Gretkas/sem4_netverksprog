@@ -8,7 +8,7 @@ edition = "2018"
 
 [lib]
 name = "lib"
-path = "src/lib.rs"
+path = "src/lib/multithreaded_tcp_server/lib.rs"
 
 [[bin]]
 name = "server"
