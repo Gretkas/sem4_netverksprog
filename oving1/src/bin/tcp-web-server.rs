@@ -6,11 +6,10 @@ use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 
 fn main() {
-    let socket = SOCKET_PATH;
     let thread_pool: ThreadPool = ThreadPool::new(4);
 
     // Bind to socket
-    let stream = match TcpListener::bind(&socket) {
+    let stream = match TcpListener::bind(SOCKET_PATH) {
         Err(_) => panic!("failed to bind socket"),
         Ok(stream) => stream,
     };
