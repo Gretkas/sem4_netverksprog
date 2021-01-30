@@ -18,8 +18,11 @@ path = "src/bin/tcp-web-server.rs"
 name = "tcp-calculation-server"
 path = "src/bin/tcp-calculator-server.rs"
 
+[[bin]]
+name = "tcp-client"
+path = "src/bin/tcp-client.rs"
 
 [dependencies]
-serde = "1.0.9"
 serde_json = "1.0"
 serde_derive = "1.0.9"
+serde = { version = "1.0", features = ["derive"]}

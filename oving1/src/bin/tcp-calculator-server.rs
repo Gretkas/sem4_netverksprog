@@ -1,6 +1,9 @@
 extern crate lib;
+use lib::Calculator::CalculationRequest;
 use lib::ThreadPool::ThreadPool;
 use lib::SOCKET_PATH;
+use serde::de::Deserialize;
+use std::error::Error;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 
@@ -27,12 +30,32 @@ fn main() {
 }
 
 fn handle_connection(mut stream: TcpStream) {
-    let mut buffer = [0; 1024];
+    let request: CalculationRequest = read_calculation_from_stream(&stream).unwrap();
 
-    stream.read(&mut buffer).unwrap();
-
-    let request = String::from_utf8_lossy(&buffer[..]);
-
-    stream.write("hello".as_bytes()).unwrap();
+    let calculation = match serde_json::to_string(&handle_calculation(request)) {
+        Err(_) => {
+            stream
+                .write(String::from("Unable to calculate object").as_bytes())
+                .unwrap();
+            stream.flush().unwrap();
+            return;
+        }
+        Ok(calculation) => calculation,
+    };
+    println!("sending calculation back");
+    stream.write(calculation.as_bytes()).unwrap();
     stream.flush().unwrap();
+}
+
+fn read_calculation_from_stream(
+    tcp_stream: &TcpStream,
+) -> Result<CalculationRequest, Box<dyn Error>> {
+    let mut de = serde_json::Deserializer::from_reader(tcp_stream);
+    let u = CalculationRequest::deserialize(&mut de)?;
+
+    Ok(u)
+}
+
+fn handle_calculation(req: CalculationRequest) -> CalculationRequest {
+    req.calculate()
 }
