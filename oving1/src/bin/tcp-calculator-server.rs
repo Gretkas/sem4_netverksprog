@@ -5,10 +5,11 @@ use lib::SOCKET_PATH;
 use serde::de::Deserialize;
 use std::error::Error;
 use std::io::prelude::*;
+use std::io::{BufRead, BufReader};
 use std::net::{TcpListener, TcpStream};
 
 fn main() {
-    let thread_pool: ThreadPool = ThreadPool::new(4);
+    let thread_pool: ThreadPool = ThreadPool::new(10);
 
     // Bind to socket
     let stream = match TcpListener::bind(SOCKET_PATH) {
@@ -30,6 +31,10 @@ fn main() {
 }
 
 fn handle_connection(mut stream: TcpStream) {
+    let bufread = BufReader::new(&stream);
+    for line in bufread.lines() {
+        println!("{}", line.unwrap());
+    }
     let request: CalculationRequest = read_calculation_from_stream(&stream).unwrap();
 
     let calculation = match serde_json::to_string(&handle_calculation(request)) {
@@ -50,10 +55,10 @@ fn handle_connection(mut stream: TcpStream) {
 fn read_calculation_from_stream(
     tcp_stream: &TcpStream,
 ) -> Result<CalculationRequest, Box<dyn Error>> {
-    let mut de = serde_json::Deserializer::from_reader(tcp_stream);
-    let u = CalculationRequest::deserialize(&mut de)?;
+    let mut deserialized_stream = serde_json::Deserializer::from_reader(tcp_stream);
+    let result = CalculationRequest::deserialize(&mut deserialized_stream)?;
 
-    Ok(u)
+    Ok(result)
 }
 
 fn handle_calculation(req: CalculationRequest) -> CalculationRequest {
