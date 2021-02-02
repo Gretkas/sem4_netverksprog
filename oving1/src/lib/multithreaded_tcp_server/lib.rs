@@ -1,4 +1,4 @@
-// common.rs
+// lib.rs
 pub mod Calculator;
 pub mod ThreadPool;
 

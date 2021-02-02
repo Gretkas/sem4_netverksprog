@@ -10,6 +10,8 @@ pub struct ThreadPool {
     sender: mpsc::Sender<Message>,
 }
 
+// Thread pool implementation for the ThreadPool struct.
+// Threads are created by workers, which can be handed functions to execute through channels. They will either be giver work or told to terminate.
 impl ThreadPool {
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
@@ -49,6 +51,7 @@ enum Message {
     Terminate,
 }
 
+// the implementation for a worker struct
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
         let thread = thread::spawn(move || loop {
@@ -75,6 +78,7 @@ impl Worker {
     }
 }
 
+// Drop function for shutting down all workers
 impl Drop for ThreadPool {
     fn drop(&mut self) {
         println!("Sending terminate message to all workers.");

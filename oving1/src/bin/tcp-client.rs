@@ -17,16 +17,16 @@ fn main() {
                 "Only + and - are supported. Press enter or invalid request on a new line to Exit"
             );
 
+            // Continually looping over user input, this way we need to pass a reference to the TCPstream
+            // I could Create a new stream on every loop, that way it would go out of scope on every loop. Not really needed here.
             loop {
                 let mut input = String::new();
 
                 stdin().read_line(&mut input).expect("Error reading input");
-                if input.is_empty() {
-                    break;
-                }
+
                 let input: Vec<&str> = input.split_whitespace().collect();
                 if input.is_empty() || input.len() < 2 {
-                    break;
+                    break; // breaks loop and exits if input is empty or insufficient to create a calculation
                 }
 
                 let request = convert_string_to_calculation(&input);
@@ -34,14 +34,13 @@ fn main() {
                 let request_json = convert_calculation_to_json(&request);
 
                 write_to_server(&mut stream, &request_json);
-                //println!("{}", &request_json);
-                read_from_server(&mut stream);
-                // match read_calculation_from_stream(&stream) {
-                //     Ok(result) => {
-                //         println!("Answer is: {}", result.result);
-                //     }
-                //     Err(error) => println!("{:?}", error),
-                // };
+                //println!("{}", &request_json); // remove this comment if you wish to see the object being sent.
+                match read_calculation_from_stream(&stream) {
+                    Ok(result) => {
+                        println!("Answer is: {}", result.result);
+                    }
+                    Err(error) => println!("{:?}", error),
+                };
             }
         }
         Err(error) => {
@@ -51,12 +50,14 @@ fn main() {
     println!("Terminated.");
 }
 
+// writing a anything that can be converted to a string reference to the stream and flushing it.
 fn write_to_server(mut stream: &TcpStream, message: &str) {
     stream.write(message.as_bytes()).unwrap();
     stream.flush().unwrap();
     println!("Sent calculation, awaiting reply...");
 }
 
+// reading string from the stream through a buffer, is useful for reading plain messages.
 fn read_from_server(mut stream: &TcpStream) {
     let mut data = [0 as u8; 1024]; // using 1024 byte buffer
     match stream.read(&mut data) {
@@ -70,6 +71,7 @@ fn read_from_server(mut stream: &TcpStream) {
     }
 }
 
+// Converting a vector of strings into a calculation struct that can be translated to JSON.
 fn convert_string_to_calculation(calculation_req: &Vec<&str>) -> CalculationRequest {
     let mut calculation: Vec<Calculation> = Vec::new();
 
@@ -92,6 +94,7 @@ fn convert_string_to_calculation(calculation_req: &Vec<&str>) -> CalculationRequ
     }
 }
 
+//Converting a struct into an Owned string using the JSON format. This is done using Serde Json
 fn convert_calculation_to_json(calculation: &CalculationRequest) -> String {
     match serde_json::to_string(calculation) {
         Err(_) => {
@@ -100,7 +103,7 @@ fn convert_calculation_to_json(calculation: &CalculationRequest) -> String {
         Ok(calculation) => calculation,
     }
 }
-
+//Reading and deserializing potential JSON objects directly from stream instead of parsing from a string.
 fn read_calculation_from_stream(
     tcp_stream: &TcpStream,
 ) -> Result<CalculationRequest, Box<dyn Error>> {
