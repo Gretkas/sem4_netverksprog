@@ -47,4 +47,4 @@ Rust offers exhaustive handling of errors, though Enums such as `Result<Ok, Err>
 
 The calculator has been made to transfer JSON calculation object which can handle simple calulations with the + and operators. floats are not supported. If the server is provided with Invalid JSON syntax it will try to compute what is present, but is might not be what should be expected. Proper syntax would be `10 + 10 - 1 + 3` or `11234 - 33336`. Remember a whitespace between numbers and operators. The handling of calculation errors could have been handled better, but building a robust calculator is not the scope of this exercise.
 
-This is my first attempt at programming with Rust, the code is pretty garbage as I'm still trying to grasp the Rust programming language.
+This is my first attempt at programming with Rust, the code is pretty garbage as I'm still trying to grasp fundamentals of the Rust programming language.
