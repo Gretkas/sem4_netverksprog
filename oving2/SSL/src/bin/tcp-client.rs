@@ -1,5 +1,7 @@
 extern crate lib;
 use lib::Calculator::{Calculation, CalculationRequest};
+use openssl::ssl::SslConnector;
+use openssl::ssl::{SslMethod, SslStream};
 use serde::de::Deserialize;
 use std::error::Error;
 use std::io::{stdin, Read, Write};
@@ -8,7 +10,9 @@ use std::str::from_utf8;
 
 fn main() {
     match TcpStream::connect(lib::SOCKET_PATH) {
-        Ok(mut stream) => {
+        Ok(stream) => {
+            let connector = SslConnector::builder(SslMethod::tls()).unwrap().build();
+            let mut stream = connector.connect("localhost", stream).unwrap();
             println!("Successfully connected to {}", lib::SOCKET_PATH);
 
             println!("Please type out your calculation in this format 10 + 10 + 10 - 10, remember space inbetween number and operators");
@@ -33,14 +37,12 @@ fn main() {
 
                 let request_json = convert_calculation_to_json(&request);
 
-                write_to_server(&mut stream, &request_json);
+                stream.write_all(request_json.as_bytes()).unwrap();
+                stream.flush().unwrap();
                 //println!("{}", &request_json); // remove this comment if you wish to see the object being sent.
-                match read_calculation_from_stream(&stream) {
-                    Ok(result) => {
-                        println!("Answer is: {}", result.result);
-                    }
-                    Err(error) => println!("{:?}", error),
-                };
+                let mut deserialized_stream = serde_json::Deserializer::from_reader(&mut stream);
+                let result = CalculationRequest::deserialize(&mut deserialized_stream).unwrap();
+                println!("{:?}", result.result);
             }
         }
         Err(error) => {
@@ -51,14 +53,14 @@ fn main() {
 }
 
 // writing a anything that can be converted to a string reference to the stream and flushing it.
-fn write_to_server(mut stream: &TcpStream, message: &str) {
-    stream.write(message.as_bytes()).unwrap();
+fn write_to_server(mut stream: SslStream<TcpStream>, message: &str) {
+    stream.write_all(message.as_bytes()).unwrap();
     stream.flush().unwrap();
     println!("Sent calculation, awaiting reply...");
 }
 
 // reading string from the stream through a buffer, is useful for reading plain messages.
-fn read_from_server(mut stream: &TcpStream) {
+fn read_from_server(mut stream: SslStream<&TcpStream>) {
     let mut data = [0 as u8; 1024]; // using 1024 byte buffer
     match stream.read(&mut data) {
         Ok(_) => {
@@ -105,7 +107,7 @@ fn convert_calculation_to_json(calculation: &CalculationRequest) -> String {
 }
 //Reading and deserializing potential JSON objects directly from stream instead of parsing from a string.
 fn read_calculation_from_stream(
-    tcp_stream: &TcpStream,
+    tcp_stream: SslStream<TcpStream>,
 ) -> Result<CalculationRequest, Box<dyn Error>> {
     let mut deserialized_stream = serde_json::Deserializer::from_reader(tcp_stream);
     let result = CalculationRequest::deserialize(&mut deserialized_stream)?;
