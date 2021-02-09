@@ -1,0 +1,25 @@
+[package]
+name = "oving1"
+version = "0.1.0"
+authors = ["sigmund"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "lib"
+path = "src/lib/udp_server/lib.rs"
+
+[[bin]]
+name = "udp-calculation-server"
+path = "src/bin/udp-calculator-server.rs"
+
+[[bin]]
+name = "udp-client"
+path = "src/bin/udp-client.rs"
+
+[dependencies]
+serde_json = "1.0"
+serde_derive = "1.0.9"
+serde = { version = "1.0", features = ["derive"]}
+rustls = "0.19.0"

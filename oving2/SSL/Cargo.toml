@@ -1,0 +1,26 @@
+[package]
+name = "ssl"
+version = "0.1.0"
+authors = ["sigmund"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "lib"
+path = "src/lib/multithreaded_tcp_server/lib.rs"
+
+[[bin]]
+name = "tcp-calculation-server"
+path = "src/bin/tcp-calculator-server.rs"
+
+[[bin]]
+name = "tcp-client"
+path = "src/bin/tcp-client.rs"
+
+[dependencies]
+serde_json = "1.0"
+serde_derive = "1.0.9"
+serde = { version = "1.0", features = ["derive"]}
+openssl =  "0.10.32"
+
