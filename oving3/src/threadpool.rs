@@ -37,6 +37,15 @@ impl ThreadPool {
 
         self.sender.send(Message::NewJob(job)).unwrap();
     }
+
+    pub fn join(&mut self) {
+        for worker in &mut self.workers {
+            println!("Joining workers {}", worker.id);
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
 }
 
 type Job = Box<dyn FnOnce() + Send + 'static>; // boxing elements lets you refer to something that will be put on a stack. This will be the function that is sent to the worker(thread) for excecution.
