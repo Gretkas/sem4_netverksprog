@@ -16,6 +16,6 @@ To change the defualt range, which is `let prime_range = prime_range { upper: 50
 
 The work is ranges are split ten times the amount of cores specified, this is to ensure that one cpu core won't be out of work if it finishes early, although it might cause some overhead on small ranges.
 
-Calculating the work done is not accurate, but you get the general idea. from looking at it. View the code for more details of implementation.
+Calculating the work done is not accurate, but you get the general idea from looking at it. View the code for more details of implementation.
 
 Run the project with: `cargo run`
