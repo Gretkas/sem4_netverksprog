@@ -12,7 +12,7 @@ fn main() {
     // The server is allocated 3 workers/threads
     let thread_pool: ThreadPool = ThreadPool::new(3);
 
-    let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    let mut acceptor = SslAcceptor::mozilla_modern(SslMethod::tls()).unwrap();
     acceptor
         .set_private_key_file("localhost.key", SslFiletype::PEM)
         .unwrap();

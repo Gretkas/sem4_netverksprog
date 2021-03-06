@@ -22,5 +22,5 @@ path = "src/bin/tcp-client.rs"
 serde_json = "1.0"
 serde_derive = "1.0.9"
 serde = { version = "1.0", features = ["derive"]}
-openssl =  "0.10.32"
-
+openssl = { version = "0.10", features = ["vendored"] }
+openssl-probe = "0.1.2"

@@ -12,7 +12,15 @@ fn main() {
     match TcpStream::connect(lib::SOCKET_PATH) {
         Ok(stream) => {
             let connector = SslConnector::builder(SslMethod::tls()).unwrap().build();
-            let mut stream = connector.connect("localhost", stream).unwrap();
+            let mut configuration = match connector.configure() {
+                Ok(configuration) => configuration,
+                Err(error) => {
+                    println!("Failed to configure: {:?}", error.errors());
+                    panic!();
+                }
+            };
+            configuration.set_verify_hostname(false);
+            let mut stream = configuration.connect("localhost", stream).unwrap();
             println!("Successfully connected to {}", lib::SOCKET_PATH);
 
             println!("Please type out your calculation in this format 10 + 10 + 10 - 10, remember space inbetween number and operators");
