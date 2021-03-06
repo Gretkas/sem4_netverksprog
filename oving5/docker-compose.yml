@@ -1,0 +1,14 @@
+services:
+  frontend:
+    image: code_execution_frontend
+    build:
+      context: ./frontend/code-execution-frontend
+    ports:
+      - 8080:3000
+
+  backend:
+    image: code_execution_backend
+    build:
+      context: ./backend/code-execution-engine-api
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
