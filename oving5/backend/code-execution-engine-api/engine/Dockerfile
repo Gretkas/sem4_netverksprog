@@ -26,5 +26,3 @@ RUN apt-get install -y sudo
 RUN apt-get install -y bc
 
 WORKDIR /code
-
-CMD [ "python", "python.py", ">", "code/output.txt" ]
