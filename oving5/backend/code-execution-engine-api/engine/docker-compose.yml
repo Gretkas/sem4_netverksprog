@@ -1,0 +1,7 @@
+services:
+  engine:
+    image: code_execution_engine
+    build:
+      context: ./
+    volumes:
+      - ./temp:/code

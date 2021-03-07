@@ -1,0 +1,1 @@
+docker run -v /home/sigmund/Documents/skole/sem4/sem4_netverksprog/oving5/backend/code-execution-engine-api/engine/temp:/code --name code1 code_execution_engine:latest

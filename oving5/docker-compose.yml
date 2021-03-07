@@ -5,10 +5,21 @@ services:
       context: ./frontend/code-execution-frontend
     ports:
       - 8080:3000
+    depends_on:
+      - backend_api
 
-  backend:
-    image: code_execution_backend
+  backend_api:
+    image: code_execution_api
     build:
       context: ./backend/code-execution-engine-api
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+  engine:
+    image: code_execution_engine
+    build:
+      context: ./backend/code-execution-engine-api/engine
+    volumes:
+      - ./backend/code-execution-engine-api/engine/temp:/code
+    depends_on:
+      - backend_api
