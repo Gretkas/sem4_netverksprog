@@ -10,3 +10,7 @@ edition = "2018"
 rocket = "0.4.4"
 rocket_codegen = "0.4.6"
 inotify = "0.9.2"
+serde_json = "1.0.64"
+serde = {version = "1.0.124", features = ["derive"] }
+rocket_contrib = "0.4.7"
+rocket_cors = "0.5.2"

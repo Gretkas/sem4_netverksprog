@@ -1,19 +1,30 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 extern crate inotify;
+extern crate rocket_cors;
+#[macro_use]
+extern crate serde;
+#[macro_use]
+extern crate rocket;
 
+pub mod compilers;
+
+use compilers::{LangArray, Language};
 use core::fmt::Error;
 use inotify::{EventMask, Inotify, WatchMask};
+use rocket::http::Method;
+use rocket_contrib::json::Json;
+use rocket_cors::{AllowedHeaders, AllowedOrigins};
+use serde::Deserialize;
 use std::env;
 use std::fs;
 use std::fs::create_dir;
+use std::fs::File;
+use std::io::prelude::*;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::{thread, time};
-
-#[macro_use]
-extern crate rocket;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -21,20 +32,29 @@ fn index() -> &'static str {
 }
 
 fn main() {
+    let default = rocket_cors::CorsOptions::default();
+
     rocket::ignite()
-        .mount("/", routes![index, execute_code])
+        .mount("/", routes![index, execute_code, execute_code_posted_code])
+        .attach(default.to_cors().unwrap())
         .launch();
 }
 
 #[get("/code")]
 fn execute_code() -> String {
+    let langs = LangArray::init();
+
+    println!("{}", langs.languages[0].language);
+
     let language = String::from("python");
 
-    let code = String::from("print hello");
+    let code =
+        fs::read_to_string("engine/temp/python.py").expect("Something went wrong reading the file");
 
     let code_request = CodeRequest { language, code };
     let request = CodeExecutionContainer::new(code_request);
     request.init();
+
     request.run();
 
     let (dirname, full_dir_name) = get_dirname("test/result/output.txt");
@@ -48,6 +68,29 @@ fn execute_code() -> String {
     return String::from(&contents);
 }
 
+#[post("/code", format = "application/json", data = "<code_request>")]
+fn execute_code_posted_code(code_request: Json<CodeRequest>) -> String {
+    let code = code_request.code.to_owned();
+    let language = code_request.language.to_owned();
+    let code_request = CodeRequest { language, code };
+
+    let request = CodeExecutionContainer::new(code_request);
+    request.init();
+
+    request.run();
+
+    let (dirname, full_dir_name) = get_dirname("test/result/output.txt");
+
+    let watch = request.watch(&dirname, &full_dir_name);
+
+    let contents =
+        fs::read_to_string(full_dir_name).expect("Something went wrong reading the file");
+
+    request.cleanup();
+    return String::from(&contents);
+}
+
+#[derive(Deserialize)]
 struct CodeRequest {
     language: String,
     code: String,
@@ -74,7 +117,10 @@ impl CodeExecutionContainer {
         fs::create_dir("test").expect("File exists");
         fs::create_dir("test/result").expect("File exists");
         fs::copy("engine/run.sh", "test/run.sh").unwrap();
-        fs::copy("engine/temp/python.py", "test/python.py").unwrap();
+        //fs::copy("engine/temp/python.py", "test/python.py").unwrap();
+
+        let mut file = File::create("test/code.py").expect("unable to create file");
+        file.write_all(self.request.code.as_bytes()).unwrap();
 
         //let mut docker_build = Command::new("docker-compose");
         //let command = docker_build.args(&["build"]).current_dir("engine").spawn().expect("process failed to execute");
@@ -83,11 +129,11 @@ impl CodeExecutionContainer {
     pub fn run(&self) {
         let current_dir = env::current_dir().unwrap();
 
-        let volume = String::from(format!("{:?}/test:code", current_dir));
+        // let volume = String::from(format!("{:?}/test:code", current_dir));
 
         let mut docker_run = Command::new("docker-compose");
 
-        let command = docker_run
+        docker_run
             .current_dir("engine")
             .args(&["up"])
             .spawn()

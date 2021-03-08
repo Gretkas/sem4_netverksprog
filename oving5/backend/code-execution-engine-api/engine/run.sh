@@ -1,1 +1,1 @@
-python python.py > result/output.txt
+python python.py Python > result/output.txt
