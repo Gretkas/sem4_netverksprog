@@ -38,7 +38,7 @@ fn execute_code() -> String {
     request.run();
 
     let (dirname, full_dir_name) = get_dirname("test/result/output.txt");
-    println!("{:?} {:?}", &dirname, &full_dir_name);
+
     let watch = request.watch(&dirname, &full_dir_name);
 
     let contents =
@@ -91,7 +91,9 @@ impl CodeExecutionContainer {
             .current_dir("engine")
             .args(&["up"])
             .spawn()
-            .expect("process failed to execute");
+            .expect("process failed to execute")
+            .wait()
+            .expect("Dunno");
     }
 
     pub fn watch(&self, dirname: &Path, full_dir_name: &Path) -> i32 {
@@ -109,8 +111,9 @@ impl CodeExecutionContainer {
                     match event.name {
                         Some(name) => {
                             if dirname.join(name) == full_dir_name {
-                                let five_hunderd_millis = time::Duration::from_millis(500);
-                                thread::sleep(five_hunderd_millis);
+                                // I had to sleep before to let the compile finish
+                                //let five_hunderd_millis = time::Duration::from_millis(500);
+                                //thread::sleep(five_hunderd_millis);
                                 return 0;
                             }
                         }
