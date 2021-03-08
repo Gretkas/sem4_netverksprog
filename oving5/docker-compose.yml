@@ -23,3 +23,4 @@ services:
       - ./backend/code-execution-engine-api/engine/temp:/code
     depends_on:
       - backend_api
+    command: bash -c "python python.py > output.txt"

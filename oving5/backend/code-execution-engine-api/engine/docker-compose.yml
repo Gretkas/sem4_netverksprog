@@ -4,5 +4,5 @@ services:
     build:
       context: ./
     volumes:
-      - ./temp:/code
-    command: bash -c "python python.py > output.txt"
+      - ../test:/code
+    command: bash ./run.sh

@@ -1,0 +1,1 @@
+python python.py > result/output.txt
