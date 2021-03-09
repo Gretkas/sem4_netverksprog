@@ -10,17 +10,13 @@ services:
 
   backend_api:
     image: code_execution_api
+    ports:
+      - 8000:8000
     build:
       context: ./backend/code-execution-engine-api
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - test1:/test1
 
-  engine:
-    image: code_execution_engine
-    build:
-      context: ./backend/code-execution-engine-api/engine
-    volumes:
-      - ./backend/code-execution-engine-api/engine/temp:/code
-    depends_on:
-      - backend_api
-    command: bash -c "python python.py > output.txt"
+volumes:
+  test1:

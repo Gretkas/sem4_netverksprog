@@ -19,7 +19,7 @@ function App() {
 
   function send() {
     axios
-      .post("http://[::1]:8000/code", {
+      .post("http://localhost:8000/code", {
         language: inputLang,
         code: inputCode,
       })
@@ -57,10 +57,10 @@ function App() {
         <Dropdown.Item onSelect={() => setInputLang("Python")}>
           Python
         </Dropdown.Item>
-        <Dropdown.Item onSelect={() => setInputLang("NodeJS")}>
+        <Dropdown.Item onSelect={() => setInputLang("Nodejs")}>
           NodeJS
         </Dropdown.Item>
-        <Dropdown.Item onSelect={() => setInputLang("GO")}>GO</Dropdown.Item>
+        <Dropdown.Item onSelect={() => setInputLang("Go")}>GO</Dropdown.Item>
       </DropdownButton>
       <Editor
         value={codeOutput}

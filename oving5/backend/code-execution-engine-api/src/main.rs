@@ -1,30 +1,23 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 extern crate inotify;
 extern crate rocket_cors;
-#[macro_use]
 extern crate serde;
 #[macro_use]
 extern crate rocket;
 
 pub mod compilers;
 
-use compilers::{LangArray, Language};
-use core::fmt::Error;
+use compilers::{LangMap, Language};
 use inotify::{EventMask, Inotify, WatchMask};
-use rocket::http::Method;
 use rocket_contrib::json::Json;
-use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::fs::create_dir;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::{thread, time};
 
 #[get("/")]
 fn index() -> &'static str {
@@ -42,10 +35,6 @@ fn main() {
 
 #[get("/code")]
 fn execute_code() -> String {
-    let langs = LangArray::init();
-
-    println!("{}", langs.languages[0].language);
-
     let language = String::from("python");
 
     let code =
@@ -100,6 +89,7 @@ struct CodeExecutionContainer {
     name: String,
     request: CodeRequest,
     result: String,
+    current_language: Language,
 }
 
 impl CodeExecutionContainer {
@@ -107,35 +97,50 @@ impl CodeExecutionContainer {
         let name = String::from("test");
         let result = String::from("null");
         let request = code_request;
+        let lang_map = LangMap::new();
+        let map_lang = lang_map.languages.get(&request.language).unwrap();
+
+        let current_language = Language {
+            language: map_lang.language.to_owned(),
+            compile_args: map_lang.compile_args.clone(),
+        };
+
         return CodeExecutionContainer {
             name,
             request,
             result,
+            current_language,
         };
     }
     pub fn init(&self) {
         fs::create_dir("test").expect("File exists");
         fs::create_dir("test/result").expect("File exists");
-        fs::copy("engine/run.sh", "test/run.sh").unwrap();
-        //fs::copy("engine/temp/python.py", "test/python.py").unwrap();
+        fs::copy("run.sh", "test/run.sh").unwrap();
 
-        let mut file = File::create("test/code.py").expect("unable to create file");
+        println!("{}", &self.current_language.compile_args[1]);
+        let mut file = File::create(format!("test/{}", self.current_language.compile_args[1]))
+            .expect("unable to create file");
         file.write_all(self.request.code.as_bytes()).unwrap();
-
-        //let mut docker_build = Command::new("docker-compose");
-        //let command = docker_build.args(&["build"]).current_dir("engine").spawn().expect("process failed to execute");
     }
 
     pub fn run(&self) {
         let current_dir = env::current_dir().unwrap();
 
-        // let volume = String::from(format!("{:?}/test:code", current_dir));
+        let volume = String::from(format!("{}/test:/code", current_dir.to_str().unwrap()));
 
-        let mut docker_run = Command::new("docker-compose");
+        let mut docker_run = Command::new("docker");
 
         docker_run
-            .current_dir("engine")
-            .args(&["up"])
+            .args(&[
+                "run",
+                "-v",
+                &volume,
+                "sigmundgranaas/code_execution_engine:latest",
+                "bash",
+                "./run.sh",
+                &self.current_language.compile_args[0],
+                &self.current_language.compile_args[1],
+            ])
             .spawn()
             .expect("process failed to execute")
             .wait()
@@ -157,7 +162,7 @@ impl CodeExecutionContainer {
                     match event.name {
                         Some(name) => {
                             if dirname.join(name) == full_dir_name {
-                                // I had to sleep before to let the compile finish
+                                // I had to sleep before to let the compile finish, no longer needed, but kept in case I still need to wait
                                 //let five_hunderd_millis = time::Duration::from_millis(500);
                                 //thread::sleep(five_hunderd_millis);
                                 return 0;

@@ -3,6 +3,3 @@ services:
     image: code_execution_engine
     build:
       context: ./
-    volumes:
-      - ../test:/code
-    command: bash ./run.sh
