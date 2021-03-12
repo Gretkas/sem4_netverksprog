@@ -13,3 +13,5 @@ The backend is written in Rust using the Rocket framework. This api handles the 
 The easiest way to build the image is in the docker-compose file in the engine folder. Just run `docker-compose build`
 
 The api is asynchronous, but the code execution is not. If you send requests to quickly, some of them will fail. This is because I am not handling the code execution in separate folders. The execution of code crashes if a folder with the name "test" already exists. This could be improved upon, but it's not that important.
+
+And yes, using react for the frontend is overkill, but that's okay.
