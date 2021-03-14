@@ -46,35 +46,34 @@ async fn handle_connection(
     };
 
     let (mut reader, mut writer) = ws.stream.split();
-
     loop {
+        let mut buffer = [0 as u8; 1024];
         tokio::select! {
             Some(message) = ws.rx.recv() => {
                 send_message(&mut writer, message).await?;
             }
-            result = receive_message(&mut reader).await? => match result {
+            result = reader.read(&mut buffer) => match result {
                 // A message was received from the current user, we should
                 // broadcast this message to the other users.
-                Some(Ok(msg)) => {
+                Ok(msg) => {
                     println!("msg: {:?}", msg);
                 }
                 // An error occurred.
-                Some(Err(e)) => {
+                Err(e) => {
                     break;
                 }
-                // The stream has been exhausted.
-                None => break,
+
             },
         }
     }
 
-    {
-        let mut clients = clients.lock().await;
-        clients.clients.remove(&ws.client_adress);
+    // {
+    //     let mut clients = clients.lock().await;
+    //     clients.clients.remove(&ws.client_adress);
 
-        let msg = format!("{} has left the chat", ws.adress);
-        clients.broadcast(&msg).await;
-    }
+    //     let msg = format!("{} has left the chat", ws.adress);
+    //     clients.broadcast(&msg).await;
+    // }
 
     Ok(())
 }
