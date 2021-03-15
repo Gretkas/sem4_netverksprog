@@ -1,5 +1,5 @@
 #![warn(rust_2018_idioms)]
-use http::{Request, Response};
+use http::Request;
 use sha1::{Digest, Sha1};
 use std::collections::HashMap;
 use std::error::Error;
@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::io::Interest;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::tcp::{ReadHalf, WriteHalf};
+use tokio::net::tcp::WriteHalf;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex};
 
@@ -57,6 +57,15 @@ async fn handle_connection(
                 // broadcast this message to the other users.
                 Ok(msg) => {
                     println!("msg: {:?}", msg);
+                    let message = match WebSocket::decode_websocket_message(&buffer.to_vec()) {
+                        Ok(message) => message,
+                        Err(e) => break,
+                    };
+
+                    let fomated_message = format!("{}: {}", ws.client_adress, &message);
+                    let mut clients = ws.clients.lock().await;
+                    clients.broadcast(&fomated_message).await;
+                    buffer = [0 as u8; 1024];
                 }
                 // An error occurred.
                 Err(e) => {
@@ -67,13 +76,13 @@ async fn handle_connection(
         }
     }
 
-    // {
-    //     let mut clients = clients.lock().await;
-    //     clients.clients.remove(&ws.client_adress);
+    {
+        let mut clients = ws.clients.lock().await;
+        clients.clients.remove(&ws.client_adress);
 
-    //     let msg = format!("{} has left the chat", ws.adress);
-    //     clients.broadcast(&msg).await;
-    // }
+        let msg = format!("{} has left the chat", ws.adress);
+        clients.broadcast(&msg).await;
+    }
 
     Ok(())
 }
@@ -169,12 +178,13 @@ impl WebSocket {
     }
 
     fn init_websocket_response(websocket_key_encoded: &str) -> String {
-        let response = Response::builder()
-            .header("Upgrade", "websocket")
-            .header("Connection", "Upgrade")
-            .header("Sec-WebSocket-Accept", websocket_key_encoded)
-            .body(())
-            .unwrap();
+        //not used right now
+        // let response = Response::builder()
+        //     .header("Upgrade", "websocket")
+        //     .header("Connection", "Upgrade")
+        //     .header("Sec-WebSocket-Accept", websocket_key_encoded)
+        //     .body(())
+        //     .unwrap();
 
         let http_response = format!(
             "HTTP/1.1 101 Switching Protocols\r\n\
@@ -243,12 +253,12 @@ impl WebSocket {
                 .to_owned()
         );
 
-        let message = WebSocket::decode_websocket_message(&buffer.to_vec()).await?;
+        let message = WebSocket::decode_websocket_message(&buffer.to_vec()).unwrap();
         println!("{}", &message);
         Ok(message)
     }
 
-    async fn decode_websocket_message(buffer: &Vec<u8>) -> Result<String, &'static str> {
+    fn decode_websocket_message(buffer: &Vec<u8>) -> Result<String, &'static str> {
         let first_byte: Result<u8, &'static str> = match buffer.get(0) {
             Some(129) => Ok(129),
             _ => return Err("message is not text"),
@@ -296,32 +306,4 @@ async fn send_message(stream: &mut WriteHalf<'_>, message: String) -> Result<(),
 
     stream.write_all(&byte_message).await?;
     Ok(())
-}
-
-async fn receive_message(stream: &mut ReadHalf<'_>) -> Result<String, Box<dyn Error>> {
-    let mut buffer = [0; 1024];
-    match stream.read(&mut buffer).await {
-        Ok(n) => {
-            println!("read {} bytes", n);
-        }
-        Err(e) => {
-            return Err(e.into());
-        }
-    }
-    //self.stream.try_read(&mut buffer).unwrap();
-
-    println!("{:?}", &buffer[..]);
-    println!("{:?}", &buffer[..].len());
-
-    println!(
-        "{}",
-        String::from_utf8_lossy(&buffer[..])
-            .to_string()
-            .trim_matches(char::from(0))
-            .to_owned()
-    );
-
-    let message = WebSocket::decode_websocket_message(&buffer.to_vec()).await?;
-    println!("{}", &message);
-    Ok(message)
 }
