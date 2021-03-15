@@ -63,6 +63,7 @@ async fn handle_connection(
                     };
 
                     let fomated_message = format!("{}: {}", ws.client_adress, &message);
+                    println!("msg: {:?}", &fomated_message);
                     let mut clients = ws.clients.lock().await;
                     clients.broadcast(&fomated_message).await;
                     buffer = [0 as u8; 1024];
