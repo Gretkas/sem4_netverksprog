@@ -22,14 +22,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tokio::spawn(async move {
             println!("Accepted connection from {}", &client_adress);
 
-            if let Err(e) = handle_connection(stream, state, client_adress).await {
+            if let Err(e) = handle_ws_connection(stream, state, client_adress).await {
                 println!("an error occurred; error = {:?}", e);
             }
         });
     }
 }
 
-async fn handle_connection(
+async fn handle_ws_connection(
     stream: TcpStream,
     clients: Arc<Mutex<SharedClients>>,
     address: SocketAddr,

@@ -1,0 +1,7 @@
+# Web socket server library for small messages written in rust
+
+Run the server with `cargo run`. It will be availible at localhost:6969. It handles several users at a time. The server only handles small websocket messages, adding support for larger messages is not hard, but not implemented at the time.
+
+## Switching to an async runtime
+
+The structure of the server changed drastically once I switched to an async runtime using Tokio. The code is very messy at this point. The benefit is being to write asynchronous code which will handle all the clients. The original plan was to keep the TcpStream inside a WebSocket struct and call on the struct to execute Websocket related functionality like sending messages and such. When switching to to Tokio, and using the `tokio::select!`macro, it became clear that I would have to split the stream into a read and write part to be able to poll them at the same time. Curently the program is listening for incoming messages from the stream and messages from clients through a channel. In this setup I would need two mutable references to be able to either send or receive messages on the stream. More than one mutable reference is not allowed in Rust, as it can be unsafe. To get around this, I needed to split the stream into read and write, which allows me to poll them both concurrently. This server handled several clients easily thanks to the async runtime, which is a lot lighter than a thread model.
